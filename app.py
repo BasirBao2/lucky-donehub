@@ -1,4 +1,5 @@
 import random
+import time
 from datetime import datetime, timedelta
 import requests
 from flask import Flask, render_template, redirect, url_for, session, jsonify, request
@@ -27,6 +28,9 @@ LOTTERY_COST = 20
 LOTTERY_MAX_DAILY_SPINS = 5
 LOTTERY_OPTIONS = [10, 20, 30, 50, 60, 100]
 LOTTERY_WEIGHTS = [0.50, 0.25, 0.15, 0.05, 0.04, 0.01]
+
+LOTTERY_EXTRA_PURCHASE_COST = 5
+LOTTERY_EXTRA_PURCHASE_LIMIT = 5
 
 # 加油站（签到）配置
 SIGN_REWARD_MIN = 50
@@ -119,13 +123,35 @@ def _default_personal_summary():
     }
 
 
+def _verify_quota_increment(profile_id, initial_units, added_units):
+    expected_units = initial_units + added_units
+    latest_profile = None
+
+    for _ in range(3):
+        try:
+            latest_profile = donehub_api.get_user_by_id(profile_id)
+        except DoneHubAPIError:
+            latest_profile = None
+
+        if latest_profile:
+            current_units = latest_profile.get('quota') or 0
+            if current_units >= expected_units:
+                return latest_profile
+
+        time.sleep(0.3)
+
+    return latest_profile
+
+
 def _build_dashboard_data(user):
     user_id = user['id']
 
     spins_today, last_lottery = (getattr(_db, 'get_today_lottery_summary')(user_id)
                                  if hasattr(_db, 'get_today_lottery_summary')
                                  else (0, None))
-    remaining_attempts = max(0, LOTTERY_MAX_DAILY_SPINS - (spins_today or 0))
+    extra_purchases = getattr(_db, 'get_today_extra_purchases')(user_id) if hasattr(_db, 'get_today_extra_purchases') else 0
+    total_attempt_limit = LOTTERY_MAX_DAILY_SPINS + extra_purchases
+    remaining_attempts = max(0, total_attempt_limit - (spins_today or 0))
     lottery_history = _serialize_lottery_history(
         _db.get_user_lottery_history(user_id, limit=10)
         if hasattr(_db, 'get_user_lottery_history') else []
@@ -176,7 +202,12 @@ def _build_dashboard_data(user):
             'history': lottery_history,
             'last_record': _serialize_lottery_record(last_lottery),
             'cost': LOTTERY_COST,
-            'max_attempts': LOTTERY_MAX_DAILY_SPINS
+            'max_attempts': total_attempt_limit,
+            'base_attempts': LOTTERY_MAX_DAILY_SPINS,
+            'extra_purchased': extra_purchases,
+            'extra_purchase_limit': LOTTERY_EXTRA_PURCHASE_LIMIT,
+            'extra_purchase_cost': LOTTERY_EXTRA_PURCHASE_COST,
+            'can_purchase_extra': extra_purchases < LOTTERY_EXTRA_PURCHASE_LIMIT
         },
         'leaderboard': leaderboard_records,
         'leaderboard_self': personal_summary
@@ -195,6 +226,8 @@ def index():
             initial_data=initial_data,
             lottery_max=LOTTERY_MAX_DAILY_SPINS,
             cost_per_spin=LOTTERY_COST,
+            extra_purchase_cost=LOTTERY_EXTRA_PURCHASE_COST,
+            extra_purchase_limit=LOTTERY_EXTRA_PURCHASE_LIMIT,
             user=None,
             current_balance=0
         )
@@ -209,7 +242,9 @@ def index():
         current_balance=current_balance,
         initial_data=initial_data,
         lottery_max=LOTTERY_MAX_DAILY_SPINS,
-        cost_per_spin=LOTTERY_COST
+        cost_per_spin=LOTTERY_COST,
+        extra_purchase_cost=LOTTERY_EXTRA_PURCHASE_COST,
+        extra_purchase_limit=LOTTERY_EXTRA_PURCHASE_LIMIT
     )
 
 
@@ -345,13 +380,16 @@ def _store_donehub_profile_in_session(user, profile):
     }
 
 
-def _get_donehub_profile_or_response(user):
+def _get_donehub_profile_or_response(user, force_refresh=False):
     if not user:
         return None, jsonify({'success': False, 'message': '未登录', 'code': 'UNAUTHORIZED'}), 401
 
-    cached_profile = _get_cached_donehub_profile(user)
-    if cached_profile:
-        return cached_profile, None, None
+    if force_refresh:
+        session.pop('donehub_profile', None)
+    else:
+        cached_profile = _get_cached_donehub_profile(user)
+        if cached_profile:
+            return cached_profile, None, None
 
     try:
         profile = _get_donehub_user(user)
@@ -374,10 +412,11 @@ def sign_action():
 
     user = session['user']
     user_id = user['id']
-    profile, error_response, status_code = _get_donehub_profile_or_response(user)
+    profile, error_response, status_code = _get_donehub_profile_or_response(user, force_refresh=True)
     if error_response:
         return error_response, status_code
 
+    initial_quota_units = profile.get('quota') or 0
     current_balance = _current_balance_dollars(profile)
 
     today_record = getattr(_db, 'check_today_sign')(user_id) if hasattr(_db, 'check_today_sign') else None
@@ -432,20 +471,32 @@ def sign_action():
     if record and 'id' in record and hasattr(_db, 'update_sign_status'):
         _db.update_sign_status(record['id'], 'completed')
 
-    updated_profile = None
-    try:
-        updated_profile = donehub_api.get_user_by_id(profile['id'])
-        if updated_profile:
-            _store_donehub_profile_in_session(user, updated_profile)
-    except DoneHubAPIError:
-        updated_profile = None
+    sync_profile = _verify_quota_increment(
+        profile['id'],
+        initial_quota_units,
+        reward_units
+    )
 
-    if updated_profile:
-        current_balance = _current_balance_dollars(updated_profile)
-        _store_donehub_profile_in_session(user, updated_profile)
-    else:
-        total_units = profile.get('quota') or 0
-        current_balance = round((total_units + reward_units) / CURRENCY_UNIT, 2)
+    if not sync_profile or (sync_profile.get('quota') or 0) < (initial_quota_units + reward_units):
+        if record and 'id' in record and hasattr(_db, 'delete_sign_record'):
+            try:
+                _db.delete_sign_record(record['id'])
+            except Exception:  # pylint:disable=broad-except
+                pass
+        sign_history = _serialize_sign_history(
+            getattr(_db, 'get_recent_sign_history')(user_id, limit=7) if hasattr(_db, 'get_recent_sign_history') else []
+        )
+        return jsonify({
+            'success': False,
+            'message': 'DoneHub 额度同步失败，请稍后再试',
+            'code': 'SIGN_SYNC_FAILED',
+            'current_balance': current_balance,
+            'sign_history': sign_history
+        }), 500
+
+    updated_profile = sync_profile
+    current_balance = _current_balance_dollars(updated_profile)
+    _store_donehub_profile_in_session(user, updated_profile)
 
     sign_history = _serialize_sign_history(
         getattr(_db, 'get_recent_sign_history')(user_id, limit=7) if hasattr(_db, 'get_recent_sign_history') else []
@@ -472,7 +523,9 @@ def lottery():
                                  if hasattr(_db, 'get_today_lottery_summary')
                                  else (0, None))
     spins_today = spins_today or 0
-    remaining_attempts = max(0, LOTTERY_MAX_DAILY_SPINS - spins_today)
+    extra_purchases = getattr(_db, 'get_today_extra_purchases')(user_id) if hasattr(_db, 'get_today_extra_purchases') else 0
+    max_attempts_today = LOTTERY_MAX_DAILY_SPINS + extra_purchases
+    remaining_attempts = max(0, max_attempts_today - spins_today)
 
     profile, error_response, status_code = _get_donehub_profile_or_response(user)
     if error_response:
@@ -489,6 +542,7 @@ def lottery():
             'attempt_number': last_lottery.get('attempt_number') if last_lottery else None,
             'remaining_attempts': 0,
             'current_balance': current_balance,
+            'available_balance': round(available_units / CURRENCY_UNIT, 2),
             'lottery_history': _serialize_lottery_history(_db.get_user_lottery_history(user_id, limit=10))
         }), 400
 
@@ -500,6 +554,7 @@ def lottery():
             'code': 'INSUFFICIENT_FUNDS',
             'remaining_attempts': remaining_attempts,
             'current_balance': current_balance,
+            'available_balance': round(available_units / CURRENCY_UNIT, 2),
             'lottery_history': _serialize_lottery_history(_db.get_user_lottery_history(user_id, limit=10))
         }), 400
 
@@ -507,22 +562,29 @@ def lottery():
     redemption_code = f"DIRECT_{prize_amount}$"
 
     if hasattr(_db, 'create_lottery_record_atomic'):
-        record = _db.create_lottery_record_atomic(user_id, prize_amount, redemption_code, cost=LOTTERY_COST,
-                                                  max_attempts=LOTTERY_MAX_DAILY_SPINS)
+        record = _db.create_lottery_record_atomic(
+            user_id,
+            prize_amount,
+            redemption_code,
+            cost=LOTTERY_COST,
+            max_attempts=max_attempts_today
+        )
     else:
         record = _db.create_lottery_record(user_id, prize_amount, redemption_code, cost=LOTTERY_COST,
-                                           max_attempts=LOTTERY_MAX_DAILY_SPINS)
+                                           max_attempts=max_attempts_today)
 
     if not record:
         spins_today, last_lottery = (getattr(_db, 'get_today_lottery_summary')(user_id)
                                      if hasattr(_db, 'get_today_lottery_summary')
                                      else (LOTTERY_MAX_DAILY_SPINS, None))
+        extra_purchases = getattr(_db, 'get_today_extra_purchases')(user_id) if hasattr(_db, 'get_today_extra_purchases') else 0
+        max_attempts_today = LOTTERY_MAX_DAILY_SPINS + extra_purchases
         return jsonify({
             'success': False,
             'message': '今天已经抽过奖了，明天再来吧！',
             'quota': last_lottery['quota'] if last_lottery else None,
             'attempt_number': last_lottery.get('attempt_number') if last_lottery else None,
-            'remaining_attempts': max(0, LOTTERY_MAX_DAILY_SPINS - (spins_today or 0)),
+            'remaining_attempts': max(0, max_attempts_today - (spins_today or 0)),
             'current_balance': current_balance,
             'lottery_history': _serialize_lottery_history(_db.get_user_lottery_history(user_id, limit=10))
         }), 400
@@ -592,7 +654,9 @@ def lottery():
         current_balance = round((total_units - cost_units + prize_units) / CURRENCY_UNIT, 2)
 
     attempt_number = record.get('attempt_number') if isinstance(record, dict) else (spins_today + 1)
-    remaining_after = max(0, LOTTERY_MAX_DAILY_SPINS - attempt_number)
+    extra_purchases = getattr(_db, 'get_today_extra_purchases')(user_id) if hasattr(_db, 'get_today_extra_purchases') else extra_purchases
+    max_attempts_today = LOTTERY_MAX_DAILY_SPINS + extra_purchases
+    remaining_after = max(0, max_attempts_today - attempt_number)
 
     lottery_history = _serialize_lottery_history(_db.get_user_lottery_history(user_id, limit=10))
 
@@ -607,6 +671,106 @@ def lottery():
         'current_balance': current_balance,
         'net_change': round(prize_amount - LOTTERY_COST, 2),
         'lottery_history': lottery_history
+    })
+
+
+@app.route('/lottery/purchase', methods=['POST'])
+def purchase_lottery_attempt():
+    if 'user' not in session:
+        return jsonify({'success': False, 'message': '请先登录'}), 401
+
+    user = session['user']
+    user_id = user['id']
+
+    extra_purchases = getattr(_db, 'get_today_extra_purchases')(user_id) if hasattr(_db, 'get_today_extra_purchases') else 0
+    if extra_purchases >= LOTTERY_EXTRA_PURCHASE_LIMIT:
+        return jsonify({
+            'success': False,
+            'message': '今日可购买次数已达上限',
+            'code': 'PURCHASE_LIMIT_REACHED'
+        }), 400
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        requested_quantity = int(payload.get('quantity', 1))
+    except (TypeError, ValueError):
+        requested_quantity = 1
+
+    requested_quantity = max(1, min(LOTTERY_EXTRA_PURCHASE_LIMIT, requested_quantity))
+
+    remaining_quota = LOTTERY_EXTRA_PURCHASE_LIMIT - extra_purchases
+    if requested_quantity > remaining_quota:
+        return jsonify({
+            'success': False,
+            'message': f'今日最多还能购买 {remaining_quota} 次',
+            'code': 'PURCHASE_LIMIT_REACHED',
+            'remaining_quota': remaining_quota
+        }), 400
+
+    profile, error_response, status_code = _get_donehub_profile_or_response(user, force_refresh=True)
+    if error_response:
+        return error_response, status_code
+
+    purchase_units = LOTTERY_EXTRA_PURCHASE_COST * CURRENCY_UNIT
+    total_purchase_units = purchase_units * requested_quantity
+    available_units = _available_units(profile)
+    if available_units < total_purchase_units:
+        return jsonify({
+            'success': False,
+            'message': '余额不足，无法购买额外抽奖次数',
+            'code': 'INSUFFICIENT_FUNDS',
+            'current_balance': round(available_units / CURRENCY_UNIT, 2)
+        }), 400
+
+    records = None
+    if hasattr(_db, 'add_extra_purchase_atomic'):
+        records = _db.add_extra_purchase_atomic(user_id, LOTTERY_EXTRA_PURCHASE_LIMIT, count=requested_quantity)
+    else:
+        return jsonify({
+            'success': False,
+            'message': '暂不支持购买额外次数'
+        }), 500
+
+    if not records:
+        return jsonify({
+            'success': False,
+            'message': '今日可购买次数已达上限',
+            'code': 'PURCHASE_LIMIT_REACHED'
+        }), 400
+
+    try:
+        donehub_api.change_user_quota(profile['id'], -total_purchase_units,
+                                      f"购买抽奖次数 {LOTTERY_EXTRA_PURCHASE_COST} $ × {requested_quantity}")
+    except DoneHubAPIError as exc:
+        if records and hasattr(_db, 'delete_extra_purchase'):
+            for inserted in records:
+                record_id = inserted.get('id') if isinstance(inserted, dict) else None
+                if record_id:
+                    try:
+                        _db.delete_extra_purchase(record_id)
+                    except Exception:  # pylint:disable=broad-except
+                        pass
+        return jsonify({
+            'success': False,
+            'message': str(exc),
+            'code': 'PURCHASE_FAILED'
+        }), 500
+
+    updated_profile = None
+    try:
+        updated_profile = donehub_api.get_user_by_id(profile['id'])
+        if updated_profile:
+            _store_donehub_profile_in_session(user, updated_profile)
+    except DoneHubAPIError:
+        updated_profile = None
+
+    dashboard_data, current_balance = _build_dashboard_data(user)
+
+    return jsonify({
+        'success': True,
+        'message': f'成功购买 {requested_quantity} 次抽奖机会',
+        'current_balance': current_balance,
+        'data': dashboard_data
     })
 
 
@@ -634,7 +798,7 @@ if __name__ == '__main__':
     print("=" * 50)
     print("🎰 包子铺 幸运大转盘系统启动")
     print("=" * 50)
-    print("访问地址: http://localhost:25000")
+    print("访问地址: http://localhost:15000")
     print(f"DoneHub API: {DONEHUB_BASE_URL}")
     print("=" * 50)
 

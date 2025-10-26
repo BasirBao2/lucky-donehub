@@ -68,6 +68,16 @@ class DatabaseImproved:
             ''')
 
             cursor.execute('''
+                CREATE TABLE IF NOT EXISTS lottery_extra_purchases (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    purchase_date DATE NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            ''')
+
+            cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_lottery_user_date
                 ON lottery_records(user_id, lottery_date)
             ''')
@@ -75,6 +85,11 @@ class DatabaseImproved:
             cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_sign_user_date
                 ON sign_records(user_id, sign_date)
+            ''')
+
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_extra_purchase_user_date
+                ON lottery_extra_purchases(user_id, purchase_date)
             ''')
 
             self._ensure_lottery_columns(cursor)
@@ -209,6 +224,56 @@ class DatabaseImproved:
                 (user_id, limit)
             )
             return [dict(row) for row in cursor.fetchall()]
+
+    def get_today_extra_purchases(self, user_id):
+        today = datetime.now().date().isoformat()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT COUNT(*) as cnt FROM lottery_extra_purchases WHERE user_id = ? AND purchase_date = ?',
+                (user_id, today)
+            )
+            row = cursor.fetchone()
+            count = row['cnt'] if row and 'cnt' in row.keys() else 0
+            return int(count or 0)
+
+    def add_extra_purchase_atomic(self, user_id, max_purchases, count=1):
+        today = datetime.now().date().isoformat()
+        with self.lock:
+            try:
+                with self.get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        'SELECT COUNT(*) as cnt FROM lottery_extra_purchases WHERE user_id = ? AND purchase_date = ?',
+                        (user_id, today)
+                    )
+                    row = cursor.fetchone()
+                    current = row['cnt'] if row and 'cnt' in row.keys() else 0
+                    count = max(1, int(count or 1))
+
+                    if (current or 0) + count > max_purchases:
+                        return None
+
+                    inserted_records = []
+                    for _ in range(count):
+                        cursor.execute(
+                            'INSERT INTO lottery_extra_purchases (user_id, purchase_date) VALUES (?, ?)',
+                            (user_id, today)
+                        )
+                        cursor.execute('SELECT * FROM lottery_extra_purchases WHERE id = ?', (cursor.lastrowid,))
+                        inserted = cursor.fetchone()
+                        if inserted:
+                            inserted_records.append(dict(inserted))
+
+                    return inserted_records
+            except sqlite3.IntegrityError:
+                return None
+
+    def delete_extra_purchase(self, record_id):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM lottery_extra_purchases WHERE id = ?', (record_id,))
+            return cursor.rowcount > 0
 
     def get_today_lottery_totals(self, limit=10):
         today = datetime.now().date().isoformat()

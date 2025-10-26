@@ -377,6 +377,12 @@
             color: var(--primary);
         }
 
+        .stat-hint {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #6B7280;
+        }
+
         /* 历史记录 */
         .history-section {
             margin-top: 30px;
@@ -439,6 +445,53 @@
 
         .history-amount.loss small {
             color: var(--danger);
+        }
+
+        .extra-purchase-panel {
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .extra-purchase-select {
+            min-width: 120px;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-weight: 600;
+            color: var(--primary);
+            background: white;
+        }
+
+        .btn-purchase-extra {
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-purchase-extra:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(217, 119, 6, 0.25);
+        }
+
+        .btn-purchase-extra:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+            background: #D1D5DB;
+            color: #6B7280;
+            box-shadow: none;
+        }
+
+        .extra-purchase-info {
+            font-size: 0.85rem;
+            color: #6B7280;
         }
 
         /* 消息提示 */
@@ -860,7 +913,8 @@
                 <div class="game-stats">
                     <div class="stat-card">
                         <div class="stat-label">今日剩余次数</div>
-                        <div class="stat-value"><span id="attemptsLeft">0</span> / {{ lottery_max }}</div>
+                        <div class="stat-value"><span id="attemptsLeft">0</span> / <span id="attemptsMax">{{ lottery_max }}</span></div>
+                        <div class="stat-hint" id="extraPurchaseHint">默认 {{ lottery_max }} 次</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">单次消耗</div>
@@ -870,6 +924,14 @@
                         <div class="stat-label">最高奖励</div>
                         <div class="stat-value">100 $</div>
                     </div>
+                </div>
+
+                <div class="extra-purchase-panel">
+                    <select class="extra-purchase-select" id="purchaseExtraSelect"></select>
+                    <button class="btn-purchase-extra" id="purchaseExtraBtn" type="button">
+                        购买额外次数 ({{ extra_purchase_cost }} $)
+                    </button>
+                    <div class="extra-purchase-info" id="extraPurchaseInfo">今日最多可额外购买 {{ extra_purchase_limit }} 次</div>
                 </div>
 
                 <!-- 转盘区域 -->
@@ -938,6 +1000,9 @@
 
     <script>
         const LOTTERY_COST = {{ cost_per_spin }};
+        const EXTRA_PURCHASE_COST = {{ extra_purchase_cost }};
+        const BASE_DAILY_SPINS = {{ lottery_max }};
+        const EXTRA_PURCHASE_LIMIT = {{ extra_purchase_limit }};
         const WHEEL_PRIZES = [
             { amount: 10, color: '#EF4444', label: '10$' },
             { amount: 20, color: '#F97316', label: '20$' },
@@ -1294,6 +1359,79 @@
             }
         }
 
+        function updatePurchaseButtonLabel(purchaseCost, remainingPurchases) {
+            const purchaseBtn = document.getElementById('purchaseExtraBtn');
+            const purchaseSelect = document.getElementById('purchaseExtraSelect');
+            if (!purchaseBtn) return;
+
+            if (remainingPurchases <= 0) {
+                purchaseBtn.disabled = true;
+                purchaseBtn.textContent = '今日购买已达上限';
+                return;
+            }
+
+            const selected = Math.max(1, Math.min(remainingPurchases, Number(purchaseSelect?.value ?? 1)));
+            const totalCost = purchaseCost * selected;
+            purchaseBtn.disabled = false;
+            purchaseBtn.textContent = `购买额外 ${selected} 次 (${purchaseCost} $ × ${selected} = ${totalCost} $)`;
+        }
+
+        let latestLotteryData = null;
+
+        function updateLotterySummaryUI(lottery) {
+            if (!lottery) return;
+            latestLotteryData = lottery;
+
+            const attemptsLeftEl = document.getElementById('attemptsLeft');
+            const attemptsMaxEl = document.getElementById('attemptsMax');
+            const hintEl = document.getElementById('extraPurchaseHint');
+            const infoEl = document.getElementById('extraPurchaseInfo');
+            const purchaseBtn = document.getElementById('purchaseExtraBtn');
+            const purchaseSelect = document.getElementById('purchaseExtraSelect');
+
+            const remaining = Number(lottery.remaining_attempts ?? 0);
+            const maxAttempts = Number(lottery.max_attempts ?? BASE_DAILY_SPINS);
+            const baseAttempts = Number(lottery.base_attempts ?? BASE_DAILY_SPINS);
+            const extraPurchased = Number(lottery.extra_purchased ?? 0);
+            const purchaseLimit = Number(lottery.extra_purchase_limit ?? EXTRA_PURCHASE_LIMIT);
+            const purchaseCost = Number(lottery.extra_purchase_cost ?? EXTRA_PURCHASE_COST);
+            const remainingPurchases = Math.max(0, purchaseLimit - extraPurchased);
+
+            if (attemptsLeftEl) attemptsLeftEl.textContent = remaining;
+            if (attemptsMaxEl) attemptsMaxEl.textContent = maxAttempts;
+            if (hintEl) hintEl.textContent = `默认 ${baseAttempts} 次，可额外购买 ${purchaseLimit} 次`;
+            if (infoEl) infoEl.textContent = `已购 ${extraPurchased} 次 / 可购 ${purchaseLimit} 次`;
+
+            if (purchaseSelect) {
+                const currentValue = purchaseSelect.value;
+                purchaseSelect.innerHTML = '';
+                for (let i = 1; i <= remainingPurchases; i += 1) {
+                    const option = document.createElement('option');
+                    option.value = String(i);
+                    option.textContent = `${i} 次`;
+                    purchaseSelect.appendChild(option);
+                }
+                if (remainingPurchases === 0) {
+                    const option = document.createElement('option');
+                    option.value = '0';
+                    option.textContent = '已达上限';
+                    purchaseSelect.appendChild(option);
+                }
+
+                if (currentValue && Number(currentValue) <= remainingPurchases && Number(currentValue) > 0) {
+                    purchaseSelect.value = currentValue;
+                } else if (remainingPurchases > 0) {
+                    purchaseSelect.value = '1';
+                } else {
+                    purchaseSelect.value = '0';
+                }
+
+                purchaseSelect.disabled = remainingPurchases <= 0;
+            }
+
+            updatePurchaseButtonLabel(purchaseCost, remainingPurchases);
+        }
+
         function applyDashboardData(data) {
             if (!data || !data.is_authenticated) return;
 
@@ -1315,11 +1453,8 @@
             }
 
             if (data.lottery) {
-                const attemptsLeft = document.getElementById('attemptsLeft');
-                if (attemptsLeft) {
-                    attemptsLeft.textContent = data.lottery.remaining_attempts ?? 0;
-                }
                 updateLotteryHistory(data.lottery.history);
+                updateLotterySummaryUI(data.lottery);
             }
 
             renderLeaderboard(
@@ -1535,12 +1670,100 @@
             }
         }
 
+        async function purchaseExtraAttempt() {
+            const btn = document.getElementById('purchaseExtraBtn');
+            const message = document.getElementById('lotteryMessage');
+            const purchaseSelect = document.getElementById('purchaseExtraSelect');
+            if (!btn) return;
+
+            if (btn.disabled && btn.textContent === '今日购买已达上限') {
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '购买中...';
+            if (message) {
+                message.className = '';
+                message.textContent = '';
+            }
+
+            const quantity = Math.max(1, Number(purchaseSelect?.value ?? 1));
+
+            try {
+                const response = await fetch('/lottery/purchase', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ quantity })
+                });
+                const data = await response.json().catch(() => ({}));
+
+                if (response.ok && data?.success) {
+                    if (message) {
+                        message.className = 'message success';
+                        message.textContent = data.message || `购买成功，已增加 ${quantity} 次抽奖机会`;
+                    }
+
+                    if (data.data) {
+                        applyDashboardData(data.data);
+                    } else {
+                        refreshDashboardData();
+                    }
+                } else {
+                    const errorMsg = data?.message || '购买失败，请稍后重试';
+                    if (message) {
+                        message.className = 'message error';
+                        message.textContent = errorMsg;
+                    }
+                    btn.disabled = false;
+                    const remainingPurchases = Math.max(
+                        0,
+                        ((latestLotteryData?.extra_purchase_limit ?? EXTRA_PURCHASE_LIMIT) - (latestLotteryData?.extra_purchased ?? 0))
+                    );
+                    const purchaseCost = Number(latestLotteryData?.extra_purchase_cost ?? EXTRA_PURCHASE_COST);
+                    updatePurchaseButtonLabel(purchaseCost, remainingPurchases);
+                }
+            } catch (error) {
+                console.error('购买额外次数失败:', error);
+                if (message) {
+                    message.className = 'message error';
+                    message.textContent = '购买失败，请稍后重试';
+                }
+                btn.disabled = false;
+                const remainingPurchases = Math.max(
+                    0,
+                    ((latestLotteryData?.extra_purchase_limit ?? EXTRA_PURCHASE_LIMIT) - (latestLotteryData?.extra_purchased ?? 0))
+                );
+                const purchaseCost = Number(latestLotteryData?.extra_purchase_cost ?? EXTRA_PURCHASE_COST);
+                updatePurchaseButtonLabel(purchaseCost, remainingPurchases);
+            }
+        }
+
+        const purchaseBtn = document.getElementById('purchaseExtraBtn');
+        if (purchaseBtn) {
+            purchaseBtn.addEventListener('click', purchaseExtraAttempt);
+        }
+
+        const purchaseSelect = document.getElementById('purchaseExtraSelect');
+        if (purchaseSelect) {
+            purchaseSelect.addEventListener('change', () => {
+                const remainingPurchases = Math.max(
+                    0,
+                    ((latestLotteryData?.extra_purchase_limit ?? EXTRA_PURCHASE_LIMIT) - (latestLotteryData?.extra_purchased ?? 0))
+                );
+                const purchaseCost = Number(latestLotteryData?.extra_purchase_cost ?? EXTRA_PURCHASE_COST);
+                updatePurchaseButtonLabel(purchaseCost, remainingPurchases);
+            });
+        }
+
         // 绑定全局函数
         window.login = login;
         window.logout = logout;
         window.startSign = startSign;
         window.startLottery = startLottery;
         window.switchTab = switchTab;
+        window.purchaseExtraAttempt = purchaseExtraAttempt;
     </script>
 </body>
 </html>
