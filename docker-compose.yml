@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  lucky-wheel:
+    build: .
+    image: lucky-wheel:latest
+    container_name: lucky-wheel
+    restart: always
+    ports:
+      - "15000:15000"
+    volumes:
+      # 挂载配置文件
+      - ./config.py:/app/config.py
+      # 挂载SQLite数据库目录
+      - ./data:/app/data
+      # 挂载日志目录（可选）
+      - ./logs:/app/logs
+    environment:
+      # Flask配置
+      - FLASK_ENV=production
+      - TZ=Asia/Shanghai
+      
+      # LinuxDo OAuth2配置（可选，也可以在config.py中配置）
+      # - LINUXDO_CLIENT_ID=${LINUXDO_CLIENT_ID}
+      # - LINUXDO_CLIENT_SECRET=${LINUXDO_CLIENT_SECRET}
+      # - LINUXDO_REDIRECT_URI=${LINUXDO_REDIRECT_URI}
+      
+      # MySQL数据库配置（可选，也可以在config.py中配置）
+      # - MYSQL_HOST=${MYSQL_HOST}
+      # - MYSQL_PORT=${MYSQL_PORT}
+      # - MYSQL_USER=${MYSQL_USER}
+      # - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      # - MYSQL_DATABASE=${MYSQL_DATABASE}
+      
+    networks:
+      - lucky-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:15000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.1panel.app=lucky-wheel"
+      - "com.1panel.description=包子铺幸运大转盘抽奖系统"
+      - "com.1panel.version=2.0"
+
+networks:
+  lucky-network:
+    driver: bridge

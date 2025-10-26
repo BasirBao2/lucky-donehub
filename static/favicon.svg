@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- 背景圆形 -->
+  <circle cx="64" cy="64" r="60" fill="url(#gradient)" stroke="#FFD700" stroke-width="4"/>
+  
+  <!-- 渐变定义 -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 幸运777 -->
+  <text x="64" y="75" font-family="Arial Black, sans-serif" font-size="32" font-weight="900" 
+        text-anchor="middle" fill="#FFD700" filter="url(#glow)">777</text>
+  
+  <!-- 星星装饰 -->
+  <g fill="#FFD700">
+    <!-- 左上星星 -->
+    <path d="M 25 30 L 27 35 L 32 35 L 28 38 L 30 43 L 25 40 L 20 43 L 22 38 L 18 35 L 23 35 Z" opacity="0.8"/>
+    <!-- 右上星星 -->
+    <path d="M 103 30 L 105 35 L 110 35 L 106 38 L 108 43 L 103 40 L 98 43 L 100 38 L 96 35 L 101 35 Z" opacity="0.8"/>
+    <!-- 左下星星 -->
+    <path d="M 25 90 L 27 95 L 32 95 L 28 98 L 30 103 L 25 100 L 20 103 L 22 98 L 18 95 L 23 95 Z" opacity="0.6"/>
+    <!-- 右下星星 -->
+    <path d="M 103 90 L 105 95 L 110 95 L 106 98 L 108 103 L 103 100 L 98 103 L 100 98 L 96 95 L 101 95 Z" opacity="0.6"/>
+  </g>
+  
+  <!-- 硬币光泽效果 -->
+  <ellipse cx="64" cy="40" rx="40" ry="20" fill="url(#shine)" opacity="0.3"/>
+  
+  <defs>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+</svg>

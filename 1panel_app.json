@@ -1,0 +1,69 @@
+{
+  "name": "lucky-wheel",
+  "title": "包子铺幸运大转盘",
+  "description": "基于LinuxDo OAuth2的抽奖系统，支持直接充值到One Hub账户",
+  "version": "2.0.0",
+  "author": "BaoZiPu",
+  "website": "https://api.5202030.xyz",
+  "github": "",
+  "requirements": {
+    "memory": "512",
+    "cpu": "1",
+    "disk": "1024",
+    "ports": [
+      {
+        "port": 15000,
+        "protocol": "tcp",
+        "description": "Web界面端口"
+      }
+    ]
+  },
+  "environments": [
+    {
+      "key": "TZ",
+      "value": "Asia/Shanghai",
+      "description": "时区设置"
+    },
+    {
+      "key": "FLASK_ENV",
+      "value": "production",
+      "description": "运行环境"
+    }
+  ],
+  "volumes": [
+    {
+      "host": "./config.py",
+      "container": "/app/config.py",
+      "mode": "ro",
+      "description": "配置文件"
+    },
+    {
+      "host": "./data",
+      "container": "/app/data",
+      "mode": "rw",
+      "description": "数据目录"
+    },
+    {
+      "host": "./logs",
+      "container": "/app/logs",
+      "mode": "rw",
+      "description": "日志目录"
+    }
+  ],
+  "scripts": {
+    "install": [
+      "mkdir -p data logs",
+      "chmod 755 data logs",
+      "docker build -t lucky-wheel:latest ."
+    ],
+    "upgrade": [
+      "docker-compose down",
+      "docker build -t lucky-wheel:latest --no-cache .",
+      "docker-compose up -d"
+    ],
+    "uninstall": [
+      "docker-compose down",
+      "docker rmi lucky-wheel:latest"
+    ]
+  }
+}

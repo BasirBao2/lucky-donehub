@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>包子铺 - 你的幸运加油站</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon_lucky.svg">
+    <link rel="alternate icon" href="/static/favicon.svg">
+    <link rel="apple-touch-icon" href="/static/favicon_lucky.svg">
+    <!-- Emoji favicon fallback for older browsers -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🎰</text></svg>">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6B46C1;
+            --primary-dark: #553C9A;
+            --secondary: #F59E0B;
+            --success: #10B981;
+            --danger: #EF4444;
+            --dark: #1F2937;
+            --light: #F9FAFB;
+            --border: #E5E7EB;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+            min-height: 100vh;
+            background: url('/static/wallpaper-04.jpg') center/cover no-repeat fixed;
+            background-color: #2f3163;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 顶部导航栏 */
+        .top-navbar {
+            background: linear-gradient(135deg, #4A3B82 0%, #352861 100%);
+            padding: 12px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .top-navbar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .brand-logo {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .balance-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            color: white;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .balance-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .balance-amount {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #FCD34D;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-topbar {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        .btn-topbar.active {
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            border-color: transparent;
+        }
+
+        .btn-topbar:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .btn-topbar.active:hover {
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+        
+        .btn-logout {
+            background: linear-gradient(135deg, #EF4444, #DC2626);
+            border: none;
+        }
+        
+        .btn-logout:hover {
+            background: linear-gradient(135deg, #DC2626, #B91C1C);
+        }
+
+        .user-info-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* 主标签页容器 */
+        .main-tabs-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        /* 删除了页签切换样式，使用顶部导航栏代替 */
+
+        /* 内容区域 */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 内容卡片 */
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #F3F4F6;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-subtitle {
+            color: #6B7280;
+            font-size: 0.95rem;
+            margin-top: 5px;
+        }
+
+        /* 签到卡片 */
+        .sign-card {
+            text-align: center;
+        }
+
+        .sign-info {
+            background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .sign-status {
+            font-size: 1.1rem;
+            color: #1E40AF;
+            margin-bottom: 10px;
+        }
+
+        .sign-reward {
+            font-size: 0.95rem;
+            color: #6B7280;
+        }
+
+        .sign-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, #10B981, #059669);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .sign-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .sign-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #9CA3AF;
+        }
+
+        /* 转盘样式 */
+        .wheel-container {
+            position: relative;
+            width: min(100%, 420px);
+            max-width: 100%;
+            margin: 30px auto;
+            aspect-ratio: 1 / 1;
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(102, 126, 234, 0.3);
+        }
+
+        #wheelCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: clamp(-24px, -6vw, -12px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: clamp(12px, 4vw, 22px) solid transparent;
+            border-right: clamp(12px, 4vw, 22px) solid transparent;
+            border-top: clamp(24px, 7vw, 42px) solid #EF4444;
+            filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.5));
+            z-index: 10;
+        }
+
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: clamp(72px, 18vw, 110px);
+            height: clamp(72px, 18vw, 110px);
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 5px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+            color: white;
+            font-size: clamp(1rem, 4vw, 1.3rem);
+            font-weight: 700;
+        }
+
+        .wheel-center:hover:not(:disabled) {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .wheel-center:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #9CA3AF;
+        }
+
+        /* 游戏统计 */
+        .game-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: #F9FAFB;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #6B7280;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* 历史记录 */
+        .history-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #F3F4F6;
+        }
+
+        .history-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            background: #F9FAFB;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .history-item:hover {
+            background: #F3F4F6;
+            transform: translateX(5px);
+        }
+
+        .history-date {
+            color: #6B7280;
+            font-size: 0.9rem;
+        }
+
+        .history-amount {
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        .history-amount.loss {
+            color: var(--danger);
+        }
+
+        .history-amount small {
+            display: block;
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .history-amount.loss small {
+            color: var(--danger);
+        }
+
+        /* 消息提示 */
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: #D1FAE5;
+            border: 1px solid #6EE7B7;
+            color: #065F46;
+        }
+
+        .message.error {
+            background: #FEE2E2;
+            border: 1px solid #FCA5A5;
+            color: #991B1B;
+        }
+
+        /* 榜单样式 */
+        .leaderboard-section {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .leaderboard-column {
+            flex: 1 1 320px;
+            background: #F9FAFB;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .leaderboard-self {
+            flex: 1 1 260px;
+            background: #111827;
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .leaderboard-self-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        .leaderboard-self-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .leaderboard-self-meta {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        .leaderboard-self-score {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .leaderboard-self-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .leaderboard-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+
+        .leaderboard-note {
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: #6B7280;
+        }
+
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .leaderboard-rank {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .leaderboard-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .leaderboard-name {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .leaderboard-meta {
+            font-size: 0.85rem;
+            color: #6B7280;
+        }
+
+        .leaderboard-amount {
+            font-weight: 700;
+            color: var(--primary);
+            min-width: 72px;
+            text-align: right;
+        }
+
+        .leaderboard-amount.negative {
+            color: var(--danger);
+        }
+
+        .leaderboard-empty {
+            padding: 20px;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            text-align: center;
+            color: #6B7280;
+            background: white;
+        }
+
+        /* 登录页面 */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .login-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .login-subtitle {
+            color: #6B7280;
+            font-size: 0.95rem;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-features {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: #EFF6FF;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .feature-text {
+            color: #4B5563;
+            font-size: 0.95rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .top-navbar-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .navbar-brand {
+                gap: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .brand-logo {
+                font-size: 1.4rem;
+            }
+
+            .main-tabs-container {
+                padding: 0 10px;
+            }
+
+            .tab-btn {
+                font-size: 0.9rem;
+                padding: 12px 10px;
+            }
+
+            .tab-badge {
+                display: none;
+            }
+
+            .game-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script id="initialData" type="application/json">{{ initial_data|tojson if logged_in else '{}' }}</script>
+    {% if not logged_in %}
+    <!-- 登录页面 -->
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">🎰</div>
+                <h1 class="login-title">包子铺</h1>
+                <p class="login-subtitle">你的幸运加油站 · 签到与娱乐平台</p>
+            </div>
+
+            <button class="login-btn" onclick="login()">
+                <span>🔐</span>
+                <span>使用 LinuxDo 账号登录</span>
+            </button>
+
+            <div class="login-features">
+                <div class="feature-item">
+                    <div class="feature-icon">⛽</div>
+                    <div class="feature-text">每日签到领取额度奖励</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🎡</div>
+                    <div class="feature-text">幸运转盘赢取丰厚大奖</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💰</div>
+                    <div class="feature-text">DoneHub 额度实时到账</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-text">公平透明，即玩即得</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- 顶部导航栏 -->
+    <nav class="top-navbar">
+        <div class="top-navbar-container">
+            <div class="navbar-brand">
+                <a href="/" class="brand-logo">
+                    <span>🎰 包子铺</span>
+                </a>
+                <div class="nav-buttons">
+                    <button class="btn-topbar active" id="nav-gas" onclick="switchTab('gas')">⛽ 加油站</button>
+                    <button class="btn-topbar" id="nav-fun" onclick="switchTab('fun')">🎮 娱乐站</button>
+                    <button class="btn-topbar" id="nav-leaderboard" onclick="switchTab('leaderboard')">🏆 榜单</button>
+                </div>
+            </div>
+            
+            <div class="navbar-actions">
+                <div class="balance-info">
+                    <span class="balance-label">当前余额:</span>
+                    <span class="balance-amount">$<span id="topBalance">--</span></span>
+                </div>
+                
+                <div class="user-info-top">
+                    <div class="user-avatar">{{ user.username[0].upper() }}</div>
+                    <span>{{ user.username }}</span>
+                </div>
+                
+                <button class="btn-topbar btn-logout" onclick="logout()">
+                    退出
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <div class="main-tabs-container">
+
+        <!-- 加油站内容 -->
+        <div class="tab-content active" id="tab-gas">
+            <div class="content-card sign-card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">
+                            <span>⛽</span>
+                            <span>每日签到加油站</span>
+                        </h2>
+                        <p class="card-subtitle">签到获得随机额度奖励，额度实时到账 DoneHub</p>
+                    </div>
+                </div>
+
+                <div class="sign-info">
+                    <div class="sign-status" id="signStatus">每日签到可获得 50-100 $随机奖励</div>
+                    <div class="sign-reward">已连续签到 <strong id="signStreakCount">0</strong> 天</div>
+                </div>
+
+                <button class="sign-btn" id="signBtn" onclick="startSign()">
+                    <span>⚡</span>
+                    <span id="signBtnText">立即签到领取奖励</span>
+                </button>
+
+                <div id="signMessage"></div>
+
+                <!-- 签到历史 -->
+                <div class="history-section">
+                    <h3 class="history-title">
+                        <span>📜</span>
+                        <span>最近签到记录</span>
+                    </h3>
+                    <div class="history-list" id="signHistory">
+                        <div class="history-item">
+                            <span class="history-date">暂无签到记录</span>
+                            <span class="history-amount">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 娱乐站内容 -->
+        <div class="tab-content" id="tab-fun">
+            <div class="content-card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">
+                            <span>🎡</span>
+                            <span>幸运大转盘</span>
+                        </h2>
+                        <p class="card-subtitle">消耗额度参与抽奖，赢取丰厚奖励</p>
+                    </div>
+                </div>
+
+                <!-- 游戏统计 -->
+                <div class="game-stats">
+                    <div class="stat-card">
+                        <div class="stat-label">今日剩余次数</div>
+                        <div class="stat-value"><span id="attemptsLeft">0</span> / {{ lottery_max }}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">单次消耗</div>
+                        <div class="stat-value">{{ cost_per_spin }} $</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">最高奖励</div>
+                        <div class="stat-value">100 $</div>
+                    </div>
+                </div>
+
+                <!-- 转盘区域 -->
+                <div class="wheel-container">
+                    <div class="wheel-pointer"></div>
+                    <div class="wheel" id="wheel">
+                        <canvas id="wheelCanvas" width="400" height="400"></canvas>
+                    </div>
+                    <button class="wheel-center" id="spinBtn" onclick="startLottery()">
+                        开始
+                    </button>
+                </div>
+
+                <div id="lotteryMessage"></div>
+
+                <!-- 抽奖历史 -->
+                <div class="history-section">
+                    <h3 class="history-title">
+                        <span>🏆</span>
+                        <span>最近中奖记录</span>
+                    </h3>
+                    <div class="history-list" id="lotteryHistory">
+                        <div class="history-item">
+                            <span class="history-date">暂无抽奖记录</span>
+                            <span class="history-amount">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 今日榜单 -->
+        <div class="tab-content" id="tab-leaderboard">
+            <div class="content-card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">
+                            <span>🏆</span>
+                            <span>今日榜单</span>
+                        </h2>
+                        <p class="card-subtitle">统计今日 00:00 起的抽奖中奖与扣费数据</p>
+                    </div>
+                </div>
+
+                <div class="leaderboard-section">
+                    <div class="leaderboard-column">
+                        <h3 class="leaderboard-title">净收益榜</h3>
+                        <div class="leaderboard-list" id="leaderboardList">
+                            <div class="leaderboard-empty">暂无数据</div>
+                        </div>
+                        <div class="leaderboard-note">净收益 = 今日中奖总额 - 今日扣费总额</div>
+                    </div>
+                    <div class="leaderboard-self" id="leaderboardSelf">
+                        <div class="leaderboard-self-badge">我的收益</div>
+                        <div class="leaderboard-self-score">
+                            <div class="leaderboard-self-title">今日净收益</div>
+                            <div class="leaderboard-self-value" id="leaderboardSelfNet">+0 $</div>
+                        </div>
+                        <div class="leaderboard-self-meta" id="leaderboardSelfMeta">尚未参与抽奖</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        const LOTTERY_COST = {{ cost_per_spin }};
+        const WHEEL_PRIZES = [
+            { amount: 10, color: '#EF4444', label: '10$' },
+            { amount: 20, color: '#F97316', label: '20$' },
+            { amount: 30, color: '#10B981', label: '30$' },
+            { amount: 50, color: '#3B82F6', label: '50$' },
+            { amount: 60, color: '#8B5CF6', label: '60$' },
+            { amount: 100, color: '#FACC15', label: '100$' }
+        ];
+        const SLICE_ANGLE = 360 / WHEEL_PRIZES.length;
+        const MAX_WHEEL_SIZE = 420;
+        const MAX_WHEEL_DRAW_ATTEMPTS = 6;
+
+        let isSpinning = false;
+        let currentRotation = 0;
+        let pendingResizeRedraw = false;
+        let wheelDrawRetry = 0;
+
+        // 初始化数据（从 JSON 脚本容器安全读取）
+        let initialData = (() => {
+            const el = document.getElementById('initialData');
+            if (!el) return {};
+            try { return JSON.parse(el.textContent || '{}'); } catch (e) { return {}; }
+        })();
+
+        let dashboardRefreshing = false;
+
+        async function refreshDashboardData() {
+            if (!initialData || !initialData.is_authenticated || dashboardRefreshing) return;
+
+            dashboardRefreshing = true;
+            try {
+                const response = await fetch('/dashboard-data', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (response.status === 401) {
+                    window.location.reload();
+                    return;
+                }
+
+                if (!response.ok) {
+                    console.error('刷新数据失败:', response.statusText);
+                    return;
+                }
+
+                const payload = await response.json();
+                if (payload && payload.success && payload.data) {
+                    applyDashboardData(payload.data);
+                }
+            } catch (error) {
+                console.error('刷新数据异常:', error);
+            } finally {
+                dashboardRefreshing = false;
+            }
+        }
+
+        // Tab切换功能
+        function switchTab(tabName) {
+            // 切换导航栏按钮状态
+            document.querySelectorAll('.btn-topbar').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById('nav-' + tabName)?.classList.add('active');
+            
+            // 切换内容区域
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById('tab-' + tabName)?.classList.add('active');
+
+            if (tabName === 'fun') {
+                requestAnimationFrame(() => drawWheel(true));
+            }
+
+            refreshDashboardData();
+        }
+
+        // 绘制转盘
+        function drawWheel(force = false) {
+            const canvas = document.getElementById('wheelCanvas');
+            if (!canvas) return;
+            if (isSpinning && !force) {
+                pendingResizeRedraw = true;
+                return;
+            }
+            pendingResizeRedraw = false;
+            const container = canvas.parentElement;
+            const availableWidth = container ? container.clientWidth : MAX_WHEEL_SIZE;
+            const size = Math.min(availableWidth || MAX_WHEEL_SIZE, MAX_WHEEL_SIZE);
+
+            if (!force && (size <= 0 || Number.isNaN(size))) {
+                if (wheelDrawRetry < MAX_WHEEL_DRAW_ATTEMPTS) {
+                    wheelDrawRetry += 1;
+                    setTimeout(() => drawWheel(), 120);
+                }
+                return;
+            }
+
+            if (!force && size < 140 && wheelDrawRetry < MAX_WHEEL_DRAW_ATTEMPTS) {
+                wheelDrawRetry += 1;
+                setTimeout(() => drawWheel(), 120);
+                return;
+            }
+
+            wheelDrawRetry = 0;
+            const dpr = window.devicePixelRatio || 1;
+
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            canvas.style.width = `${size}px`;
+            canvas.style.height = `${size}px`;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            if (ctx.resetTransform) {
+                ctx.resetTransform();
+            } else {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.scale(dpr, dpr);
+
+            const prizes = WHEEL_PRIZES;
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size / 2 - Math.max(8, size * 0.02);
+            const sliceAngle = (Math.PI * 2) / prizes.length;
+            const fontSize = Math.max(16, size * 0.065);
+
+            prizes.forEach((prize, index) => {
+                const startAngle = index * sliceAngle - Math.PI / 2;
+                const endAngle = (index + 1) * sliceAngle - Math.PI / 2;
+
+                // 绘制扇形
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.lineTo(centerX, centerY);
+                ctx.fillStyle = prize.color;
+                ctx.fill();
+
+                // 绘制边框
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // 绘制文字
+                ctx.save();
+                const textAngle = startAngle + sliceAngle / 2;
+                ctx.translate(centerX, centerY);
+                ctx.rotate(textAngle);
+                ctx.fillStyle = 'white';
+                ctx.font = `bold ${fontSize}px Inter`;
+                ctx.fillText(prize.label, radius * 0.6, fontSize * 0.3);
+                ctx.restore();
+            });
+
+            // 绘制中心圆
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, size * 0.13, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+        }
+
+        // 初始化转盘
+        if (document.getElementById('wheelCanvas')) {
+            drawWheel();
+        }
+
+        let wheelResizeTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(wheelResizeTimer);
+            wheelResizeTimer = setTimeout(() => {
+                drawWheel();
+            }, 200);
+        });
+
+        // 更新余额显示
+        function updateBalanceDisplay(balance) {
+            if (balance === undefined || balance === null) return;
+            const numeric = Number(balance);
+            if (Number.isNaN(numeric)) return;
+            const normalized = numeric.toFixed(2);
+            
+            const topBalance = document.getElementById('topBalance');
+            const statsBalance = document.getElementById('statsBalance');
+            
+            if (topBalance) topBalance.textContent = normalized;
+            if (statsBalance) statsBalance.textContent = normalized;
+        }
+
+        const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+        const normalizeDate = (value) => {
+            if (!value) return null;
+            const date = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(date.getTime())) return null;
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        };
+
+        const calculateSignStreak = (history) => {
+            if (!Array.isArray(history) || !history.length) return 0;
+            const parsed = history
+                .map(item => normalizeDate(item?.sign_date))
+                .filter(Boolean)
+                .sort((a, b) => b.getTime() - a.getTime());
+            if (!parsed.length) return 0;
+
+            let streak = 0;
+            let expected = new Date(parsed[0].getTime());
+
+            for (const date of parsed) {
+                const current = normalizeDate(date);
+                if (!current) continue;
+                const diff = Math.round((expected.getTime() - current.getTime()) / MS_PER_DAY);
+                if (diff === 0) {
+                    streak += 1;
+                    expected = new Date(expected.getTime() - MS_PER_DAY);
+                } else if (diff > 0) {
+                    break;
+                } else if (diff < 0) {
+                    expected = new Date(current.getTime());
+                }
+            }
+            return streak;
+        };
+
+        const updateSignStreakDisplay = (history) => {
+            const streakEl = document.getElementById('signStreakCount');
+            if (!streakEl) return;
+            const streak = calculateSignStreak(history);
+            streakEl.textContent = streak;
+        };
+
+        // 更新签到历史
+        function updateSignHistory(history) {
+            const container = document.getElementById('signHistory');
+            if (!container) return;
+
+            container.innerHTML = '';
+            if (!history || !history.length) {
+                container.innerHTML = '<div class="history-item"><span class="history-date">暂无签到记录</span><span class="history-amount">--</span></div>';
+                updateSignStreakDisplay([]);
+                return;
+            }
+
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                    <span class="history-date">${item.sign_date}</span>
+                    <span class="history-amount">+${item.reward} $</span>
+                `;
+                container.appendChild(div);
+            });
+
+            updateSignStreakDisplay(history);
+        }
+
+        // 更新抽奖历史
+        function updateLotteryHistory(history) {
+            const container = document.getElementById('lotteryHistory');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            if (!history || !history.length) {
+                container.innerHTML = '<div class="history-item"><span class="history-date">暂无抽奖记录</span><span class="history-amount">--</span></div>';
+                return;
+            }
+            
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                const prizeValue = item.quota ?? 0;
+                const netAmount = prizeValue - (item.cost ?? LOTTERY_COST);
+                const amountClass = netAmount >= 0 ? 'history-amount' : 'history-amount loss';
+                const netText = `净${netAmount >= 0 ? '+' : ''}${netAmount} $`;
+                div.innerHTML = `
+                    <span class="history-date">${item.lottery_date || ''}</span>
+                    <span class="${amountClass}">+${prizeValue} $<small>${netText}</small></span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderLeaderboard(data, selfInfo) {
+            const container = document.getElementById('leaderboardList');
+            if (container) {
+                container.innerHTML = '';
+
+                if (!Array.isArray(data) || !data.length) {
+                    container.innerHTML = '<div class="leaderboard-empty">暂无数据</div>';
+                } else {
+                    data.forEach((item, index) => {
+                        const name = item?.username || '未知用户';
+                        const attempts = Number(item?.attempts ?? 0);
+                        const totalPrize = Number(item?.total_prize ?? 0);
+                        const totalCost = Number(item?.total_cost ?? 0);
+                        const net = Number(item?.net_change ?? 0);
+
+                        const row = document.createElement('div');
+                        row.className = 'leaderboard-item';
+
+                        const rankEl = document.createElement('span');
+                        rankEl.className = 'leaderboard-rank';
+                        rankEl.textContent = String(index + 1);
+
+                        const infoEl = document.createElement('div');
+                        infoEl.className = 'leaderboard-info';
+
+                        const nameEl = document.createElement('div');
+                        nameEl.className = 'leaderboard-name';
+                        nameEl.textContent = name;
+
+                        const metaEl = document.createElement('div');
+                        metaEl.className = 'leaderboard-meta';
+                        metaEl.textContent = `中奖 ${totalPrize.toFixed(0)} $ · 扣费 ${totalCost.toFixed(0)} $ · ${Math.max(0, attempts)} 次`;
+
+                        infoEl.appendChild(nameEl);
+                        infoEl.appendChild(metaEl);
+
+                        const amountEl = document.createElement('span');
+                        amountEl.className = net >= 0 ? 'leaderboard-amount' : 'leaderboard-amount negative';
+                        amountEl.textContent = `${net >= 0 ? '+' : ''}${net.toFixed(0)} $`;
+
+                        row.appendChild(rankEl);
+                        row.appendChild(infoEl);
+                        row.appendChild(amountEl);
+
+                        container.appendChild(row);
+                    });
+                }
+            }
+
+            const selfNetEl = document.getElementById('leaderboardSelfNet');
+            const selfMetaEl = document.getElementById('leaderboardSelfMeta');
+            if (selfNetEl && selfMetaEl) {
+                const net = Number(selfInfo?.net_change ?? 0);
+                const totalPrize = Number(selfInfo?.total_quota ?? 0);
+                const totalCost = Number(selfInfo?.total_cost ?? 0);
+                const attempts = Number(selfInfo?.attempts ?? 0);
+
+                selfNetEl.textContent = `${net >= 0 ? '+' : ''}${net.toFixed(0)} $`;
+                selfNetEl.style.color = net >= 0 ? '#34D399' : '#F87171';
+
+                if (attempts > 0) {
+                    selfMetaEl.textContent = `中奖 ${totalPrize.toFixed(0)} $ · 扣费 ${totalCost.toFixed(0)} $ · ${attempts} 次`;
+                } else {
+                    selfMetaEl.textContent = '今日尚未参与抽奖';
+                }
+            }
+        }
+
+        function applyDashboardData(data) {
+            if (!data || !data.is_authenticated) return;
+
+            initialData = data;
+
+            if (data.balance !== undefined) {
+                updateBalanceDisplay(data.balance);
+            }
+
+            if (data.sign) {
+                const todaySigned = Boolean(data.sign.today_signed);
+                const signBtn = document.getElementById('signBtn');
+                const signBtnText = document.getElementById('signBtnText');
+                if (signBtn && signBtnText) {
+                    signBtn.disabled = todaySigned;
+                    signBtnText.textContent = todaySigned ? '今日已签到' : '立即签到领取奖励';
+                }
+                updateSignHistory(data.sign.history);
+            }
+
+            if (data.lottery) {
+                const attemptsLeft = document.getElementById('attemptsLeft');
+                if (attemptsLeft) {
+                    attemptsLeft.textContent = data.lottery.remaining_attempts ?? 0;
+                }
+                updateLotteryHistory(data.lottery.history);
+            }
+
+            renderLeaderboard(
+                Array.isArray(data.leaderboard) ? data.leaderboard : [],
+                data.leaderboard_self || null
+            );
+        }
+
+        applyDashboardData(initialData);
+
+        // 登录/退出功能
+        function login() {
+            window.location.href = '/login';
+        }
+
+        function logout() {
+            window.location.href = '/logout';
+        }
+
+        // 签到功能
+        async function startSign() {
+            const btn = document.getElementById('signBtn');
+            const btnText = document.getElementById('signBtnText');
+            const message = document.getElementById('signMessage');
+            
+            btn.disabled = true;
+            btnText.textContent = '签到中...';
+            if (message) message.innerHTML = '';
+            
+            try {
+                const response = await fetch('/sign', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    btnText.textContent = '今日已签到';
+                    if (message) {
+                        message.className = 'message success';
+                        message.textContent = data.message;
+                    }
+                    
+                    if (data.current_balance !== undefined) {
+                        updateBalanceDisplay(data.current_balance);
+                    }
+                    updateSignHistory(data.sign_history);
+                    refreshDashboardData();
+                } else {
+                    if (message) {
+                        message.className = 'message error';
+                        message.textContent = data.message;
+                    }
+                    
+                    if (data.code !== 'ALREADY_SIGNED') {
+                        btn.disabled = false;
+                        btnText.textContent = '立即签到领取奖励';
+                    } else {
+                        btnText.textContent = '今日已签到';
+                    }
+                }
+            } catch (error) {
+                if (message) {
+                    message.className = 'message error';
+                    message.textContent = '签到失败，请稍后再试';
+                }
+                btn.disabled = false;
+                btnText.textContent = '立即签到领取奖励';
+                console.error('签到错误:', error);
+            }
+        }
+
+        async function startLottery() {
+            if (isSpinning) return;
+
+            const btn = document.getElementById('spinBtn');
+            const wheel = document.getElementById('wheel');
+            const message = document.getElementById('lotteryMessage');
+
+            isSpinning = true;
+            btn.disabled = true;
+            btn.textContent = '抽奖中...';
+            if (message) message.innerHTML = '';
+
+            const spinStartTime = performance.now();
+            const MIN_SPIN_TIME = 1500; // 确保至少旋转这么久
+            let continuousRAF = null;
+            let continuousActive = false;
+
+            const waitForMinimumSpin = () => {
+                const elapsed = performance.now() - spinStartTime;
+                if (elapsed >= MIN_SPIN_TIME) return Promise.resolve();
+                return new Promise(resolve => setTimeout(resolve, MIN_SPIN_TIME - elapsed));
+            };
+
+            const stopContinuousSpin = () => {
+                if (!continuousActive) return;
+                continuousActive = false;
+                if (continuousRAF) cancelAnimationFrame(continuousRAF);
+                continuousRAF = null;
+            };
+
+            const startContinuousSpin = () => {
+                continuousActive = true;
+                wheel.style.transition = 'none';
+                let last = performance.now();
+                const speed = 720; // 每秒旋转度数
+                const step = (now) => {
+                    if (!continuousActive) return;
+                    const delta = now - last;
+                    last = now;
+                    currentRotation += (speed * delta) / 1000;
+                    wheel.style.transform = `rotate(${currentRotation}deg)`;
+                    continuousRAF = requestAnimationFrame(step);
+                };
+                continuousRAF = requestAnimationFrame(step);
+            };
+
+            const finishWithError = async (
+                errorMessage = '抽奖失败，请稍后重试',
+                keepDisabled = false,
+                buttonLabel = '开始'
+            ) => {
+                await waitForMinimumSpin();
+                stopContinuousSpin();
+                if (message) {
+                    message.className = 'message error';
+                    message.textContent = errorMessage;
+                }
+                btn.textContent = buttonLabel;
+                btn.disabled = !!keepDisabled;
+                isSpinning = false;
+                if (pendingResizeRedraw) {
+                    pendingResizeRedraw = false;
+                    drawWheel(true);
+                }
+            };
+
+            // 工具函数：收尾动画
+            const startSettleSpin = async (data) => {
+                await waitForMinimumSpin();
+                stopContinuousSpin();
+
+                const prizeIndex = Math.max(0, WHEEL_PRIZES.findIndex(p => p.amount === data.quota));
+                const normalizedCurrent = ((currentRotation % 360) + 360) % 360;
+                const randomOffset = (Math.random() - 0.5) * SLICE_ANGLE * 0.4;
+                const targetAngle = (360 - (prizeIndex * SLICE_ANGLE + SLICE_ANGLE / 2) + randomOffset + 360) % 360;
+                const baseSpins = 4;
+                let extraRotation = (targetAngle - normalizedCurrent + 360) % 360;
+                extraRotation += baseSpins * 360;
+                const finalRotation = currentRotation + extraRotation;
+                const settleDuration = 1800;
+
+                wheel.style.transition = 'none';
+                wheel.style.transform = `rotate(${currentRotation}deg)`;
+                void wheel.offsetWidth;
+                requestAnimationFrame(() => {
+                    wheel.style.transition = `transform ${settleDuration}ms cubic-bezier(0.23, 1, 0.32, 1)`;
+                    wheel.style.transform = `rotate(${finalRotation}deg)`;
+                });
+                currentRotation = finalRotation;
+
+                setTimeout(() => {
+                    if (data.current_balance !== undefined) updateBalanceDisplay(data.current_balance);
+                    const attemptsLeft = document.getElementById('attemptsLeft');
+                    if (attemptsLeft && data.remaining_attempts !== undefined) attemptsLeft.textContent = data.remaining_attempts;
+                    updateLotteryHistory(data.lottery_history);
+                    if (message) {
+                        const net = (data.quota ?? 0) - LOTTERY_COST;
+                        const netText = `净${net >= 0 ? '+' : ''}${net} $`;
+                        message.className = 'message success';
+                        message.innerHTML = `🎉 恭喜获得 ${data.quota} $奖励！<br><small>${netText}</small>`;
+                    }
+                    btn.disabled = false;
+                    btn.textContent = '开始';
+                    isSpinning = false;
+                    refreshDashboardData();
+                    if (pendingResizeRedraw) {
+                        pendingResizeRedraw = false;
+                        drawWheel(true);
+                    }
+                }, settleDuration);
+            };
+
+            startContinuousSpin();
+
+            try {
+                const response = await fetch('/lottery', { method: 'POST' });
+                const data = await response.json();
+
+                if (!data.success) {
+                    const isUserMissing = data.code === 'USER_NOT_FOUND';
+                    const isInsufficient = data.code === 'INSUFFICIENT_FUNDS';
+                    let buttonLabel = '开始';
+                    let keepDisabled = false;
+                    let msg = data.message || '抽奖失败，请稍后重试';
+
+                    if (isUserMissing) {
+                        buttonLabel = '账号未绑定';
+                        keepDisabled = true;
+                        msg = data.message || '账号未绑定，无法抽奖';
+                    } else if (isInsufficient) {
+                        buttonLabel = '余额不足';
+                        keepDisabled = true;
+                        msg = data.message || '余额不足，无法抽奖';
+                    }
+
+                    await finishWithError(msg, keepDisabled, buttonLabel);
+                    return;
+                }
+
+                await startSettleSpin(data);
+            } catch (error) {
+                console.error('抽奖错误:', error);
+                await finishWithError('抽奖失败，请稍后重试');
+            }
+        }
+
+        // 绑定全局函数
+        window.login = login;
+        window.logout = logout;
+        window.startSign = startSign;
+        window.startLottery = startLottery;
+        window.switchTab = switchTab;
+    </script>
+</body>
+</html>

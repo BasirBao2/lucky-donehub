@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 背景 -->
+  <rect width="64" height="64" rx="12" fill="url(#bg)"/>
+  
+  <!-- 渐变定义 -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    
+    <radialGradient id="gold">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+    </radialGradient>
+    
+    <filter id="shadow">
+      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- 四叶草（幸运符号） -->
+  <g transform="translate(32, 32)" filter="url(#shadow)">
+    <!-- 上叶 -->
+    <ellipse cx="0" cy="-10" rx="8" ry="10" fill="url(#gold)"/>
+    <!-- 右叶 -->
+    <ellipse cx="10" cy="0" rx="10" ry="8" fill="url(#gold)"/>
+    <!-- 下叶 -->
+    <ellipse cx="0" cy="10" rx="8" ry="10" fill="url(#gold)"/>
+    <!-- 左叶 -->
+    <ellipse cx="-10" cy="0" rx="10" ry="8" fill="url(#gold)"/>
+    <!-- 中心 -->
+    <circle cx="0" cy="0" r="6" fill="#FFD700"/>
+    <!-- 中心数字7 -->
+    <text x="0" y="4" text-anchor="middle" font-size="10" font-weight="bold" fill="#764ba2">7</text>
+  </g>
+  
+  <!-- 角落装饰星星 -->
+  <g fill="#FFF" opacity="0.8">
+    <circle cx="10" cy="10" r="2"/>
+    <circle cx="54" cy="10" r="2"/>
+    <circle cx="10" cy="54" r="1.5"/>
+    <circle cx="54" cy="54" r="1.5"/>
+  </g>
+</svg>

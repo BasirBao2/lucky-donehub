@@ -1,0 +1,28 @@
+# LinuxDo OAuth2 配置
+# 申请地址: https://linux.do/admin/users/{username}/preferences/apps
+LINUXDO_CLIENT_ID = "your_client_id"
+LINUXDO_CLIENT_SECRET = "your_client_secret"
+LINUXDO_REDIRECT_URI = "http://localhost:5000/callback"
+
+# DoneHub / New API 配置（请勿直接连库）
+NEW_API_BASE_URL = "https://your-donehub.com"
+NEW_API_ADMIN_TOKEN = "your_donehub_access_token"
+NEW_API_ACCESS_TOKEN = ""
+NEW_API_USER_ID = "1"
+
+DONEHUB_BASE_URL = NEW_API_BASE_URL
+DONEHUB_ACCESS_TOKEN = NEW_API_ADMIN_TOKEN
+
+# Flask 配置
+SECRET_KEY = "your_secret_key_here_please_change_me"
+
+# 额度单位（1 美元 = QUOTA_UNIT）
+QUOTA_UNIT = 500000
+
+# 禁用直连数据库
+MYSQL_HOST = ""
+MYSQL_PORT = 3306
+MYSQL_USER = ""
+MYSQL_PASSWORD = ""
+MYSQL_DATABASE = ""
+USE_DIRECT_DB = False
